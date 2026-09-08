@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAA X ADZAN // LIVE</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg: #ECECEC; --black: #000000; --border: 4px solid var(--black); --shadow: 8px 8px 0px var(--black); }
+        body { background: var(--bg); font-family: 'JetBrains Mono', monospace; padding: 20px; padding-bottom: 80px; }
+        header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: var(--border); padding-bottom: 10px; }
+        
+        .video-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .video-card { background: white; border: var(--border); box-shadow: var(--shadow); overflow: hidden; }
+        .video-card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; border-bottom: var(--border); }
+        .video-info { padding: 15px; }
+        .video-title { font-weight: bold; font-size: 0.9rem; margin-bottom: 10px; }
+        .watch-btn { display: block; background: #A8F000; border: 3px solid black; padding: 10px; text-align: center; font-weight: 800; text-decoration: none; color: black; }
+        
+        /* Nav */
+        nav { position: fixed; bottom: 0; width: 100%; background: var(--black); border-top: var(--border); display: flex; justify-content: space-around; padding: 10px 0; left: 0; }
+        nav a { color: white; text-decoration: none; text-align: center; font-size: 0.7rem; font-weight: bold; }
+        nav a i { font-size: 1.2rem; display: block; margin-bottom: 4px; }
+        nav a.active { color: #A8F000; }
+    </style>
+</head>
+<body>
+    <header>
+        <h2 class="uppercase">Live Stream Results</h2>
+        <a href="/" style="color:black;"><i class="fas fa-arrow-left"></i> BACK</a>
+    </header>
+
+    <div id="resultsContainer" class="video-grid">
+        <p>Memuat data live stream...</p>
+    </div>
+
+    <nav>
+        <a href="/"><i class="fas fa-home"></i>HOME</a>
+        <a href="/live" class="active"><i class="fas fa-broadcast-tower"></i>LIVE</a>
+        <a href="/jadwal"><i class="fas fa-calendar-alt"></i>JADWAL</a>
+    </nav>
+
+    <script>
+        // Ambil parameter search dari URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const city = urlParams.get('search') || 'Makkah';
+
+        fetch(`/api/search_live_results?city=${city}`)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('resultsContainer');
+                container.innerHTML = '';
+                if(data.length === 0) {
+                    container.innerHTML = '<p>Tidak ada live stream ditemukan.</p>';
+                    return;
+                }
+                data.forEach(video => {
+                    container.innerHTML += `
+                        <div class="video-card">
+                            <img src="${video.thumbnail}" alt="thumb">
+                            <div class="video-info">
+                                <div class="video-title">${video.title}</div>
+                                <a href="https://www.youtube.com/watch?v=${video.video_id}" target="_blank" class="watch-btn">WATCH NOW</a>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+    </script>
+</body>
+</html>
