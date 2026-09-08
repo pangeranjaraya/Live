@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAA X ADZAN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #050505; color: white; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); }
+        .nav-active { color: #10b981; text-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+    <!-- Sidebar (Sama seperti sebelumnya) -->
+    <div id="sidebar" class="fixed left-[-100%] top-0 h-full w-72 bg-[#0a0a0a] border-r border-white/10 z-50 transition-all duration-300 pt-24 px-6 shadow-2xl">
+        <h2 class="text-xl font-bold mb-8 text-emerald-500">Menu Utama</h2>
+        <div class="space-y-4">
+            <a href="/" onclick="closeMenu()" class="block p-3 rounded-xl hover:bg-white/5"><i class="fas fa-home mr-3"></i> Home</a>
+            <a href="/info" onclick="closeMenu()" class="block p-3 rounded-xl hover:bg-white/5"><i class="fas fa-info-circle mr-3"></i> Info Aplikasi</a>
+            <a href="https://t.me/CaaCyberr404" target="_blank" class="block p-3 rounded-xl hover:bg-white/5"><i class="fab fa-telegram mr-3"></i> Customer Service 24/7</a>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-40 glass px-6 py-4 flex justify-between items-center">
+        <button onclick="toggleMenu()" class="text-emerald-400 text-xl"><i class="fas fa-bars"></i></button>
+        <h1 class="font-bold tracking-widest">CAA X <span class="text-emerald-500">ADZAN</span></h1>
+        <div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center"><i class="fas fa-globe text-xs"></i></div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 pt-20 pb-24 px-4 overflow-y-auto">
+        
+        <!-- SEARCH BAR GLOBAL -->
+        <div class="mb-6 relative">
+            <input type="text" id="citySearch" placeholder="Cari kota di seluruh dunia (ex: Paris, Tokyo)..." 
+                   class="w-full bg-white/10 border border-white/20 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:border-emerald-500 transition text-sm">
+            <i class="fas fa-search absolute left-4 top-3.5 text-slate-400"></i>
+            <button onclick="searchGlobalCity()" class="absolute right-2 top-2 bg-emerald-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-500 transition">CARI</button>
+        </div>
+
+        <!-- HASIL PENCARIAN -->
+        <div id="resultArea" class="hidden fade-in">
+            <div class="glass p-6 rounded-3xl mb-6 border-t-4 border-emerald-500">
+                <h2 id="cityName" class="text-2xl font-bold mb-1">Nama Kota</h2>
+                <p class="text-xs text-slate-400 mb-4">Jadwal Sholat Hari Ini</p>
+                
+                <div id="scheduleGrid" class="grid grid-cols-3 gap-2 text-center text-xs mb-6">
+                    <!-- Jadwal akan muncul di sini -->
+                </div>
+
+                <button onclick="playLiveForCurrentCity()" class="w-full bg-red-600 hover:bg-red-500 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition">
+                    <i class="fas fa-broadcast-tower animate-pulse"></i> LIHAT LIVE STREAM
+                </button>
+            </div>
+        </div>
+
+        <!-- PLAYER AREA -->
+        <div id="playerArea" class="hidden fade-in mb-10">
+            <div class="aspect-video bg-black rounded-xl overflow-hidden border border-white/10 relative">
+                <iframe id="youtube-player" class="w-full h-full" src="" frameborder="0" allowfullscreen></iframe>
+            </div>
+            <p id="liveTitle" class="text-center text-sm text-slate-400 mt-2 px-4"></p>
+        </div>
+
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="fixed bottom-0 w-full glass border-t border-white/10 z-40">
+        <div class="flex justify-around items-center py-3">
+            <button class="flex flex-col items-center gap-1 text-emerald-400 nav-active"><i class="fas fa-home text-lg"></i><span class="text-[10px]">HOME</span></button>
+            <button class="flex flex-col items-center gap-1 text-slate-400"><i class="fas fa-broadcast-tower text-lg"></i><span class="text-[10px]">LIVE</span></button>
+            <button class="flex flex-col items-center gap-1 text-slate-400"><i class="fas fa-calendar-alt text-lg"></i><span class="text-[10px]">JADWAL</span></button>
+        </div>
+    </nav>
+
+    <script>
+        let currentCityName = '';
+
+        function toggleMenu() {
+            const sb = document.getElementById('sidebar');
+            sb.style.left = sb.style.left === '0px' ? '-100%' : '0px';
+        }
+        function closeMenu() { document.getElementById('sidebar').style.left = '-100%'; }
+
+        async function searchGlobalCity() {
+            const city = document.getElementById('citySearch').value;
+            if(!city) return alert('Masukkan nama kota!');
+
+            // 1. Cari Koordinat
+            const geoRes = await fetch(`/api/search_city?q=${city}`);
+            const geoData = await geoRes.json();
+
+            if(geoData.status === 'success') {
+                currentCityName = city; // Simpan nama kota untuk search live nanti
+                document.getElementById('cityName').innerText = geoData.name.split(',')[0]; // Ambil nama kota saja
+                document.getElementById('resultArea').classList.remove('hidden');
+                
+                // 2. Ambil Jadwal Sholat pakai koordinat
+                const schedRes = await fetch(`/api/schedule_by_coord?lat=${geoData.lat}&lon=${geoData.lon}`);
+                const schedData = await schedRes.json();
+                
+                const grid = document.getElementById('scheduleGrid');
+                grid.innerHTML = '';
+                const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+                const labels = {'Fajr':'Subuh', 'Dhuhr':'Dzuhur', 'Asr':'Ashar', 'Maghrib':'Maghrib', 'Isha':'Isya'};
+                
+                prayers.forEach(p => {
+                    grid.innerHTML += `<div class="bg-white/5 p-2 rounded-lg"><p class="text-slate-400">${labels[p]}</p><p class="font-bold text-emerald-400">${schedData[p]}</p></div>`;
+                });
+            } else {
+                alert('Kota tidak ditemukan. Coba ejaan bahasa Inggris.');
+            }
+        }
+
+        async function playLiveForCurrentCity() {
+            if(!currentCityName) return;
+            document.getElementById('playerArea').classList.remove('hidden');
+            
+            const res = await fetch(`/api/search_live?city=${currentCityName}`);
+            const data = await res.json();
+            
+            if(data.status === 'success') {
+                document.getElementById('youtube-player').src = `https://www.youtube.com/embed/${data.video_id}?autoplay=1`;
+                document.getElementById('liveTitle').innerText = data.title;
+                document.getElementById('playerArea').scrollIntoView({behavior: 'smooth'});
+            } else {
+                alert('Maaf, tidak ditemukan live stream adzan di kota ini saat ini.');
+            }
+        }
+    </script>
+</body>
+</html>
